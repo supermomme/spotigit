@@ -1,0 +1,72 @@
+version: "3"
+services:
+  # client:
+  #   build:
+  #     context: ./client
+  #     dockerfile: ./local.Dockerfile
+  #   tty: true
+  #   command: npm run serve
+  #   environment:
+  #     - UV_THREADPOOL_SIZE=2
+  #     - VITE_APP_TENANT=${TENANT:-allstern}
+  #     - VITE_APP_API_URL=http://api:3030
+  #     - VITE_APP_CUBEJS_URL=http://cubejs:4000
+  #   ports:
+  #     - 127.0.0.1:8080:8080
+  #   volumes:
+  #     - ./client/src:/app/src
+  #     - ./i18n:/app/src/i18n
+  #     - ./shared/src:/app/src/shared
+  #     - ./api/resources:/app/src/resources
+  api:
+    build: ./api
+    command: npm run dev
+    depends_on:
+      - postgres
+    ports:
+      - 127.0.0.1:3030:3030
+    volumes:
+      - ./api/src:/usr/src/app/src
+      - ./api/public:/usr/src/app/public
+      - ./api/config:/usr/src/app/config
+      - ./api/test:/usr/src/app/test
+    environment:
+      - NODE_ENV=docker
+    env_file:
+      - .env
+  api_setup:
+    build: ./api
+    command: npm run migrate
+    depends_on:
+      - postgres
+    environment:
+      - NODE_ENV=docker
+
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /data/postgres
+    volumes:
+       - postgres:/data/postgres
+    ports:
+      - 127.0.0.1:5432:5432
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+       - pgadmin:/var/lib/pgadmin
+    ports:
+      - 127.0.0.1:5050:80
+    logging:
+      driver: none
+
+
+volumes:
+    postgres:
+    pgadmin:

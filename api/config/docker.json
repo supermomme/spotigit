@@ -1,0 +1,5 @@
+{
+  "postgresql": {
+    "connection": "postgres://postgres:postgres@postgres:5432/spotigit"
+  }
+}

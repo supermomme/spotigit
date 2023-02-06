@@ -1,0 +1,10 @@
+{
+  "authentication": {
+    "oauth": {
+      "spotify": {
+        "key": "SPOTIFY_CLIENT_ID",
+        "secret": "SPOTIFY_CLIENT_SECRET"
+      }
+    }
+  }
+}
