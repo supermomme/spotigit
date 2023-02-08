@@ -6,7 +6,8 @@ import { Params, Query } from '@feathersjs/feathers'
 import { URLSearchParams } from "url"
 
 import type { Application } from './declarations'
-import axios from 'axios';
+import { NotAuthenticated } from '@feathersjs/errors/lib'
+import jsonwebtoken, { JwtPayload } from 'jsonwebtoken'
 
 declare module './declarations' {
   interface ServiceTypes {
@@ -16,8 +17,6 @@ declare module './declarations' {
 
 class SpotifyStrategy extends OAuthStrategy {
   async getProfile(data: AuthenticationRequest, _params: Params<Query>): Promise<any> {
-    console.log({data});
-
     if (data.access_token && data.profile) {
       return {
         id: data.profile.id,
@@ -39,8 +38,6 @@ class SpotifyStrategy extends OAuthStrategy {
     })
     const authInfo = await responseAuth.json()
     
-    console.log({authInfo})
-    
     const responseUser = await fetch('https://api.spotify.com/v1/me', {
       headers: {
         'Content-Type': 'application/json',
@@ -57,10 +54,6 @@ class SpotifyStrategy extends OAuthStrategy {
   }
 
   async getEntityData(profile: OAuthProfile, _existingEntity: any, _params: Params) {
-    console.log(profile);
-    
-
-
     return {
       spotifyId: profile.id,
       spotify_country: profile.spotifyProfile.country,
@@ -78,37 +71,35 @@ class SpotifyStrategy extends OAuthStrategy {
       spotify_uri: profile.spotifyProfile.uri,
       spotify_access_token: profile.authInfo.access_token,
       spotify_refresh_token: profile.authInfo.refresh_token,
-
-      // spotifyProfile: profile.spotifyProfile,
-      // authInfo: profile.authInfo
     }
   }
+}
 
-  async authenticate(authentication: AuthenticationRequest, originalParams: AuthenticationParams): Promise<{ [x: string]: any; authentication: { strategy: string; }; }> {
-    const entity: string = this.configuration.entity
-    const { provider, ...params } = originalParams
-    const profile = await this.getProfile(authentication, params)
-    const existingEntity = (await this.findEntity(profile, params)) || (await this.getCurrentEntity(params))
+class BetterJWTStrategy extends JWTStrategy {
+  async authenticate(authentication: AuthenticationRequest, params: AuthenticationParams) {
+    const { accessToken } = authentication;
+    if (!accessToken) throw new NotAuthenticated('No access token')
 
-    console.log('authenticate with (existing) entity', existingEntity)
-
-    const authEntity = !existingEntity
-      ? await this.createEntity(profile, params)
-      : await this.updateEntity(existingEntity, profile, params)
-
-    return {
-      authentication: { strategy: 'spotify' },
-      [entity]: await this.getEntity(authEntity, originalParams)
+    const payload = jsonwebtoken.decode(accessToken) as JwtPayload|null
+    if (payload?.worker) {
+      return {
+        accessToken,
+        authentication: {
+          strategy: 'jwt',
+          accessToken,
+          payload
+        }
+      };
     }
+    return super.authenticate(authentication, params)
   }
-
 }
 
 
 export const authentication = (app: Application) => {
   const authentication = new AuthenticationService(app)
 
-  authentication.register('jwt', new JWTStrategy())
+  authentication.register('jwt', new BetterJWTStrategy())
   authentication.register('spotify', new SpotifyStrategy())
 
   app.use('authentication', authentication)

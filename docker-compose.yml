@@ -66,6 +66,17 @@ services:
     logging:
       driver: none
 
+  redis:
+    image: redis
+    ports:
+      - 127.0.0.1:6379:6379
+
+  # bull_monitor:
+  #   image: addono/bull-monitor
+  #   ports:
+  #     - 127.0.0.1:3000:3000
+  #   command: --redis-uri redis://redis:6379 --bullmq -q refresh-auth-token
+
 
 volumes:
     postgres:

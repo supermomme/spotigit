@@ -14,3 +14,6 @@ docker-compose up --build --no-attach pgadmin
 - [ ] add songs to playlist via spotigit
 - [ ] copy other users playlists (share to specific people)
 - [ ] Better Name
+
+
+https://github.com/spotify-api/spotify-api.js
